@@ -2,10 +2,10 @@ local t1 = {
 	a = 1,
 	b = 2, 
 	c = "....",
-	f = function( str) print(str) end,
+	f = function( str) print(str)  return 1 end,
 }
 
-function gettable() 
+function getTable() 
 	return t1, 1, 2
 end
 
