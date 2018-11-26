@@ -76,7 +76,6 @@ public:
 
 	}
 
-	CTest* val() { return new  CTest("11111111111111111111111111111111111111111111111"); }
 
 
 protected:
@@ -98,7 +97,6 @@ void run_test() {
   LuaSpace::class_fun<CTest>(L, "print1", &CTest::print);
   LuaSpace::class_fun<CTest>(L, "set", &CTest::set);
   LuaSpace::class_fun<CTest>(L, "stable", &CTest::stable);
-  LuaSpace::class_fun<CTest>(L, "val", &CTest::val);
   LuaSpace::class_parent<CTest, CBase>(L);
   LuaSpace::add_fun(L, "logDB", &logDebug);
 
