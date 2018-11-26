@@ -40,6 +40,13 @@ namespace LitSpace {
 		lua_setglobal(L, name);
 	}
 
+	template<typename F>
+	void add_fun2(lua_State* L, const char* name,  const F& func) {
+		lua_pushlightuserdata(L, (void*)&func);
+		push_function2(L, func);
+		lua_setglobal(L, name);
+	}
+
   //全局变量
 	template<typename T>
 	void set(lua_State* L, const char* name, T object){

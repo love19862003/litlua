@@ -48,9 +48,9 @@ namespace LitSpace {
     ~guard(){ _fun(); }
     Fun _fun;
   };
-
   typedef guard<std::function<void()>> guardfun;
 
+ 
   template<typename T>
   struct is_table { static constexpr bool ISTABLE = std::is_same<T, table>::value; };
 
@@ -153,30 +153,30 @@ namespace LitSpace {
 
 
    //全局函数的多参数展开
-	template <typename Ret, typename... Args, std::size_t... N>
-	inline Ret litFunciton(const std::function<Ret(Args...)>& func, const std::tuple<Args...>& args, _indices<N...>) {
+	template <typename Ret, typename... ARGS, std::size_t... N>
+	inline Ret litFunciton(const std::function<Ret(ARGS...)>& func, const std::tuple<ARGS...>& args, _indices<N...>) {
 		return func(std::get<N>(args)...);
 	}
 
-	template <typename Ret, typename... Args>
-	inline Ret litFunciton(const std::function<Ret(Args...)>& func, const std::tuple<Args...>& args) {
-		return litFunciton(func, args, typename _indices_builder<sizeof...(Args)>::type());
+	template <typename Ret, typename... ARGS>
+	inline Ret litFunciton(const std::function<Ret(ARGS...)>& func, const std::tuple<ARGS...>& args) {
+		return litFunciton(func, args, typename _indices_builder<sizeof...(ARGS)>::type());
 	}
 
 	//类成员函数的多参数展开
-	template <typename Ret, typename T, typename... Args, std::size_t... N>
-	inline Ret classLitFunciton(Ret(T::*func)(Args ...), T* t, const std::tuple<Args...>& args, _indices<N...>) {
+	template <typename Ret, typename T, typename... ARGS, std::size_t... N>
+	inline Ret classLitFunciton(Ret(T::*func)(ARGS ...), T* t, const std::tuple<ARGS...>& args, _indices<N...>) {
 		return (t->*func)(std::get<N>(args)...);
 	}
 
-	template <typename Ret, typename T, typename... Args>
-	inline Ret classLitFunciton(Ret(T::*func)(Args ...), T* t, const std::tuple<Args...>& args) {
-		return classLitFunciton(func, t, args, typename _indices_builder<sizeof...(Args)>::type());
+	template <typename Ret, typename T, typename... ARGS>
+	inline Ret classLitFunciton(Ret(T::*func)(ARGS ...), T* t, const std::tuple<ARGS...>& args) {
+		return classLitFunciton(func, t, args, typename _indices_builder<sizeof...(ARGS)>::type());
 	}
 
 	//类构造函数多参数展开
-	template <typename T, typename... Args, std::size_t... N>
-	inline T* constructorFun(void* p, const std::tuple<Args...>& args, _indices<N...>) {
+	template <typename T, typename... ARGS, std::size_t... N>
+	inline T* constructorFun(void* p, const std::tuple<ARGS...>& args, _indices<N...>) {
 		return new(p)T(std::get<N>(args)...);
 	}
 
@@ -185,9 +185,9 @@ namespace LitSpace {
 		return new(p)T();
 	}
 
-	template <typename T, typename... Args>
-	inline T* constructorFun(void* p, const std::tuple<Args...>& args) {
-		return constructorFun<T>(p, args, typename _indices_builder<sizeof...(Args)>::type());
+	template <typename T, typename... ARGS>
+	inline T* constructorFun(void* p, const std::tuple<ARGS...>& args) {
+		return constructorFun<T>(p, args, typename _indices_builder<sizeof...(ARGS)>::type());
 	}
 
   inline void push_args(lua_State *L){}
@@ -206,10 +206,11 @@ namespace LitSpace {
 
   //全局函数反射
   template<typename ... ARGS>
-  struct functor : public lua_args< ARGS ...>{
+  struct functor2 : public lua_args< ARGS ...>{
     template<typename Ret>
     static int invoke(lua_State* L){
-      std::function<Ret(ARGS...)> func = upvalue_<Ret(*)(ARGS ...)>(L);
+      //const std::function<Ret(ARGS...)>& func = upvalue_<Ret(*)(ARGS ...)>(L);
+		const std::function<Ret(ARGS...)>& func = upvalue_<std::function<Ret(ARGS...)>>(L);
       int index = 1;
       push<Ret>(L, litFunciton(func, reader(L, index)));
       return 1;
@@ -217,10 +218,32 @@ namespace LitSpace {
     template<>
     static int invoke<void>(lua_State* L){
       int index = 1;
-      std::function<void(ARGS...)> func = upvalue_<void(*)(ARGS ...)>(L);
+	  //const std::function<void(ARGS...)>& func = upvalue_<void(*)(ARGS ...)>(L);
+	  const std::function<void(ARGS...)>& func = upvalue_< std::function<void(ARGS...)>>(L);
       litFunciton(func, reader(L, index));
       return 0;
     }
+  };
+
+  //全局函数反射
+  template<typename ... ARGS>
+  struct functor : public lua_args< ARGS ...> {
+	  template<typename Ret>
+	  static int invoke(lua_State* L) {
+		  const std::function<Ret(ARGS...)>& func = upvalue_<Ret(*)(ARGS ...)>(L);
+		  //const std::function<Ret(ARGS...)>& func = upvalue_<std::function<Ret(ARGS...)>>(L);
+		  int index = 1;
+		  push<Ret>(L, litFunciton(func, reader(L, index)));
+		  return 1;
+	  }
+	  template<>
+	  static int invoke<void>(lua_State* L) {
+		  int index = 1;
+		  const std::function<void(ARGS...)>& func = upvalue_<void(*)(ARGS ...)>(L);
+		  //const std::function<void(ARGS...)>& func = upvalue_< std::function<void(ARGS...)>>(L);
+		  litFunciton(func, reader(L, index));
+		  return 0;
+	  }
   };
 
   //类成员函数反射
@@ -571,6 +594,15 @@ namespace LitSpace {
 		(void)func;
 		lua_pushcclosure(L, functor<ARGS...>::invoke<R>, 1);
 	}
+
+
+	//全局函数闭包入栈
+	template<typename R, typename ... ARGS >
+	void push_function2(lua_State *L, const std::function<R( ARGS...)>& func) {
+		(void)func;
+		lua_pushcclosure(L, functor2<ARGS...>::invoke<R>, 1);
+	}
+
 
 	//成员函数闭包入栈
 	template<typename R, typename T, typename ... ARGS >

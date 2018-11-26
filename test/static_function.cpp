@@ -22,9 +22,11 @@ void run_test() {
 	
   lua_State* L = luaL_newstate();
   LuaSpace::openLuaLibs(L);
-  LuaSpace::add_fun(L, "printStr", printStr);
-  LuaSpace::add_fun(L, "add", addFun);
-  LuaSpace::add_fun(L, "test", test);
+  LuaSpace::add_fun(L, "printStr", &printStr);
+  LuaSpace::add_fun(L, "add", &addFun);
+  LuaSpace::add_fun(L, "test", &test);
+  std::function<int (int, int)> fun = [](int a, int b)-> int {return a + b;};
+  LuaSpace::add_fun2(L, "func", fun);
   LuaSpace::dofile(L, "static_function.lua");
   lua_close(L);
   L = nullptr;
