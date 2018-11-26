@@ -104,19 +104,32 @@ void run_test() {
 
   LuaSpace::set(L, "gtest", 1);
   LuaSpace::dofile(L, "class.lua");
-  CTest* c = new CTest();
-  auto p = LuaSpace::rcall<LuaSpace::lua_returns<int,int,int,int,int,int,LuaSpace::table>>(L, "test",c);
-  LuaSpace::table t = std::get<LuaSpace::table>(p);
-  t.call<void>("p", "cpp call table function good");
-  LuaSpace::resetStack(L);
-  t.call<void>("p", "cpp call table function bad");  // table is nil
+  { 
+	  CTest* c = new CTest();
+	  auto p = LuaSpace::rcall<LuaSpace::lua_returns<int, int, int, int, int, int, LuaSpace::table>>(L, "test", c);
+	  assert(11 == std::get<0>(p));
+	  assert(1 == std::get<1>(p));
+	  assert(2 == std::get<2>(p));
+	  assert(3 == std::get<3>(p));
+	  assert(4 == std::get<4>(p));
+	  assert(5 == std::get<5>(p));
+	  assert(!std::get<6>(p).m_nil);
 
-  auto p2 = LuaSpace::call<int>(L, "test", c);
-  std::cout << "cpp out: call lua function with result int && return value is " << p2 << std::endl;
-  LuaSpace::call<void>(L, "test", c);
-  std::cout << "cpp out call lua test value is void" << std::endl;
+	  LuaSpace::table t = std::get<LuaSpace::table>(p);
+	  assert(!t.m_nil);
+	  t.call<void>("p", "cpp call table function good");
+	  LuaSpace::resetStack(L);
+	  t.call<void>("p", "cpp call table function bad");  // table is nil
+	  assert(t.m_nil);
+
+	  auto p2 = LuaSpace::call<int>(L, "test", c);
+	  std::cout << "cpp out: call lua function with result int && return value is " << p2 << std::endl;
+	  LuaSpace::call<void>(L, "test", c);
+	  std::cout << "cpp out call lua test value is void" << std::endl;
+	  delete c;
+	  c = nullptr;
+  }
   lua_close(L);
   L = nullptr;
-  delete c;
-  c = nullptr;
+  
 }

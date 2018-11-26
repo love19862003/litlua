@@ -232,82 +232,101 @@ namespace LitSpace{
 	//添加成员 k=v
     template<typename T>
     void set(const char* name, T object){
-      if (m_nil){ assert(false); return; }
-      m_obj->set(name, object);
+		checkNil();
+		if (m_nil){ return; }
+		m_obj->set(name, object);
     }
 
 	//添加成员 index=v
     template<typename T>
     bool add(T object){
-      if (m_nil){ assert(false);  return false; }
-      return m_obj->add(object);
+		checkNil();
+		if (m_nil){   return false; }
+		return m_obj->add(object);
     }
 
 	//添加成员 k=new table
     table table::child(const char* name){
-      if (m_nil){ assert(false); return nilTable(); }
-      table t(m_obj->state());
-      set(name, t);
-      return std::move(t);
+		checkNil();
+		if (m_nil){  return nilTable(); }
+		table t(m_obj->state());
+		set(name, t);
+		return std::move(t);
     }
 
 	//添加成员 index=new table
     table table::child(){
-      if (m_nil){ assert(false); return nilTable(); }
-      table t(m_obj->state());
-      add(t);
-      return std::move(t);
+		checkNil();
+		if (m_nil){  return nilTable(); }
+		table t(m_obj->state());
+		add(t);
+		return std::move(t);
     }
 
 	//判断是否有成员 if table[k] != nil
     bool table::has(const char* name){
-      if (m_nil){ assert(false); return false; }
-      return m_obj->has(name);
+		checkNil();
+		if (m_nil){  return false; }
+		return m_obj->has(name);
     }
 
 	//判断是否有成员 if table[index] != nil
     bool table::has(int index){
-      if (m_nil){ assert(false); return false; }
-      return m_obj->has(index);
+		checkNil();
+		if (m_nil){  return false; }
+		return m_obj->has(index);
     }
 
 	//#table
     unsigned int table::len(){
-      if (m_nil){ assert(false); return 0; }
-      return m_obj->length();
+		checkNil();
+		if (m_nil){  return 0; }
+		return m_obj->length();
     }
 
 	//获取成员对象 v = table[k]
     template<typename T>
     T get(const char* name){
-      if (m_nil){ assert(false); return T(); }
-      return m_obj->get<T>(name);
+		checkNil();
+		if (m_nil){  return T(); }
+		return m_obj->get<T>(name);
     }
 
 	//获取成员对象 v = table[index]
     template<typename T>
     T get(int index){
-      if (m_nil){ assert(false); return T(); }
-      return m_obj->get<T>(index);
+		checkNil();
+		if (m_nil){  return T(); }
+		return m_obj->get<T>(index);
     }
 
 
 	//多返回值成员函数调用 lua_returns = table.fun(args...)
     template<typename lua_returns, typename ... ARGS>
     lua_returns rcall(const char* name, ARGS ... obj){
-      if (m_nil){ assert(false); return lua_returns(); }
-      return m_obj->rcall<lua_returns, ARGS ...>(name, obj...);
+		checkNil();
+		if (m_nil){  return lua_returns(); }
+		return m_obj->rcall<lua_returns, ARGS ...>(name, obj...);
     }
 
 	
 	//单返回值成员函数调用 R = table.fun(args...)
     template<typename R, typename ... ARGS>
     R call(const char* name, ARGS ... obj){
-	  if (m_nil) { assert(false);lua_returns<R> r;  return  r.get(); }
-      auto r = m_obj->rcall<lua_returns<R>, ARGS ...>(name, obj...);
-	  return r.get();
+		checkNil();
+		if (m_nil) { lua_returns<R> r;  return  r.get(); }
+		auto r = m_obj->rcall<lua_returns<R>, ARGS ...>(name, obj...);
+		return r.get();
     }
 
+	void checkNil() {
+		if (m_obj){
+			m_nil = !m_obj->validate();
+		}
+		else {
+			m_nil = true;
+		}
+	}
     
 	void reset() { m_nil = true; m_obj.reset(); }
 
