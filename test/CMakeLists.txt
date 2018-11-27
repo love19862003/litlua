@@ -3,7 +3,9 @@ FUNCTION(build_test FILE)
 	GET_FILENAME_COMPONENT(EXT "${FILE}" EXT)
 
 
-	ADD_EXECUTABLE("${BASE}" ${FILE} main.cpp)
+	ADD_EXECUTABLE("${BASE}" ${FILE} main.cpp ${CMAKE_SOURCE_DIR}/bin/${BASE}.lua)
+
+	SOURCE_GROUP("lua" FILES  ${CMAKE_SOURCE_DIR}/bin/${BASE}.lua)
 
 	TARGET_LINK_LIBRARIES("${BASE}" litlua)
 	

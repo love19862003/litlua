@@ -124,12 +124,12 @@ namespace LitSpace {
       return r;
     }
     bool _err = false;
-	bool _has_table = false;
-	std::string _error_msg = "";
+    bool _has_table = false;
+    std::string _error_msg = "";
 
-	T& get() {
-		return std::get<0>(*this);
-	}
+    T& get(){
+      return std::get<0>(*this);
+    }
 
   };
 
@@ -204,46 +204,52 @@ namespace LitSpace {
     push_args(L, args...);
   }
 
-  //全局函数反射
+  //全局函数和std::function反射
   template<typename ... ARGS>
-  struct functor2 : public lua_args< ARGS ...>{
+  struct functor : public lua_args< ARGS ...>{
+    template<typename Ret>
+    static int invoke_func(lua_State* L){
+      const std::function<Ret(ARGS...)>& func = upvalue_<std::function<Ret(ARGS...)>>(L);
+      if (!check(L, func)) return 0;
+      int index = 1;
+      push<Ret>(L, litFunciton(func, reader(L, index)));
+      return 1;
+    }
+    template<>
+    static int invoke_func<void>(lua_State* L){
+      const std::function<void(ARGS...)>& func = upvalue_< std::function<void(ARGS...)>>(L);
+      if(!check(L, func)) return 0;
+      int index = 1;
+      litFunciton(func, reader(L, index));
+      return 0;
+    }
+
     template<typename Ret>
     static int invoke(lua_State* L){
-      //const std::function<Ret(ARGS...)>& func = upvalue_<Ret(*)(ARGS ...)>(L);
-		const std::function<Ret(ARGS...)>& func = upvalue_<std::function<Ret(ARGS...)>>(L);
+      const std::function<Ret(ARGS...)>& func = upvalue_<Ret(*)(ARGS ...)>(L);
+      if (!check(L, func))  return 0;
       int index = 1;
       push<Ret>(L, litFunciton(func, reader(L, index)));
       return 1;
     }
     template<>
     static int invoke<void>(lua_State* L){
+      const std::function<void(ARGS...)>& func = upvalue_<void(*)(ARGS ...)>(L);
+      if (!check(L, func))  return 0;
       int index = 1;
-	  //const std::function<void(ARGS...)>& func = upvalue_<void(*)(ARGS ...)>(L);
-	  const std::function<void(ARGS...)>& func = upvalue_< std::function<void(ARGS...)>>(L);
       litFunciton(func, reader(L, index));
       return 0;
     }
-  };
 
-  //全局函数反射
-  template<typename ... ARGS>
-  struct functor : public lua_args< ARGS ...> {
-	  template<typename Ret>
-	  static int invoke(lua_State* L) {
-		  const std::function<Ret(ARGS...)>& func = upvalue_<Ret(*)(ARGS ...)>(L);
-		  //const std::function<Ret(ARGS...)>& func = upvalue_<std::function<Ret(ARGS...)>>(L);
-		  int index = 1;
-		  push<Ret>(L, litFunciton(func, reader(L, index)));
-		  return 1;
-	  }
-	  template<>
-	  static int invoke<void>(lua_State* L) {
-		  int index = 1;
-		  const std::function<void(ARGS...)>& func = upvalue_<void(*)(ARGS ...)>(L);
-		  //const std::function<void(ARGS...)>& func = upvalue_< std::function<void(ARGS...)>>(L);
-		  litFunciton(func, reader(L, index));
-		  return 0;
-	  }
+    template<typename Ret>
+    static bool check(lua_State* L, const std::function<Ret(ARGS...)>& func){
+      if (nullptr == func){
+        push(L, "lua error with call invalid std::function (nullptr)");
+        on_error(L);
+        return false;
+      }
+      return true;
+    }
   };
 
   //类成员函数反射
@@ -254,6 +260,7 @@ namespace LitSpace {
       auto func = upvalue_<Ret(T::*)(ARGS ...)>(L);
       int index = 1;
       T* t = read<T*>(L, index++);
+      if(!check(L, t)) return 0;
       push<Ret>(L, classLitFunciton(func, t, reader(L, index)));
       return 1;
     }
@@ -262,8 +269,18 @@ namespace LitSpace {
       auto func = upvalue_<void(T::*)(ARGS ...)>(L);
       int index = 1;
       T* t = read<T*>(L, index++);
+      if (!check(L, t)) return 0;
       classLitFunciton(func, t, reader(L, index));
       return 0;
+    }
+
+    static bool check(lua_State* L, T* t){
+      if (nullptr == t){
+        push(L, "lua error with call invalid object(nullptr) member function");
+        on_error(L);
+        return false;
+      }
+      return true;
     }
   };
 
@@ -359,8 +376,25 @@ namespace LitSpace {
   struct mem_var : var_base{
     V T::*_var;
     mem_var(V T::*val): _var(val){}
-    void get(lua_State *L){ push<typename std::conditional<is_obj<V>::value, V&, V>::type>(L, read<T*>(L, 1)->*(_var)); }
-    void set(lua_State *L){ read<T*>(L, 1)->*(_var) = read<V>(L, 3); }
+    void get(lua_State *L){
+      T* t = read<T*>(L, 1);
+      if (!check(L, t)) return;
+      push<typename std::conditional<is_obj<V>::value, V&, V>::type>(L, t->*(_var)); 
+    }
+    void set(lua_State *L){ 
+      T* t = read<T*>(L, 1);
+      if(!check(L, t)) return ;
+      T->*(_var) = read<V>(L, 3); 
+    }
+
+    bool check(lua_State *L, T* t){
+      if (nullptr == t){
+        push(L, "lua error with call member var with nullptr");
+        on_error(L);
+        return false;
+      }
+      return true;
+    }
   };
 
 	//萃取原始类型
@@ -596,11 +630,11 @@ namespace LitSpace {
 	}
 
 
-	//全局函数闭包入栈
+	//std::function闭包入栈 func的作用域和有效期回影响调用
 	template<typename R, typename ... ARGS >
 	void push_function2(lua_State *L, const std::function<R( ARGS...)>& func) {
 		(void)func;
-		lua_pushcclosure(L, functor2<ARGS...>::invoke<R>, 1);
+		lua_pushcclosure(L, functor<ARGS...>::invoke_func<R>, 1);
 	}
 
 
