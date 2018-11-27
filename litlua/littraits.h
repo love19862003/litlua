@@ -50,9 +50,6 @@ namespace LitSpace {
   };
   typedef guard<std::function<void()>> guardfun;
 
- 
-  template<typename T>
-  struct is_table { static constexpr bool ISTABLE = std::is_same<T, table>::value; };
 
   //读取栈内连续数据,主要是实现读取C函数调用参数和lua返回值
   template<size_t N, size_t M, typename T>
@@ -90,9 +87,9 @@ namespace LitSpace {
 
     static bool check_reader(lua_State* L, T& r, int& index, std::string& _error_msg){
       auto& ref = std::get<I>(r);
-	  bool r1 = check<std::remove_reference<decltype(ref)>::type>(L, index);
-	  if (r1) { ref = read<std::remove_reference<decltype(ref)>::type>(L, index); }
-	  else { _error_msg.append("\nerror read index:").append(std::to_string(I)).append(" with type:").append(typeid(std::remove_reference<decltype(ref)>::type).name()); }
+      bool r1 = check<std::remove_reference<decltype(ref)>::type>(L, index);
+      if (r1){ ref = read<std::remove_reference<decltype(ref)>::type>(L, index); }
+      else{ _error_msg.append("\nerror read index:").append(std::to_string(I)).append(" with type:").append(typeid(std::remove_reference<decltype(ref)>::type).name()); }
       return r1;
     }
   };

@@ -31,7 +31,8 @@ void run_test() {
 
 		assert(1 == t.call<int>("func"));
 		auto p2 = t.rcall<LuaSpace::lua_returns<unsigned int, unsigned int, unsigned int, unsigned int>>("func");
-		assert(1 == std::get<0>(p2));
+    assert(!p2._err);
+    assert(1 == std::get<0>(p2));
 		assert(2 == std::get<1>(p2));
 		assert(3 == std::get<2>(p2));
 		assert(4 == std::get<3>(p2));
