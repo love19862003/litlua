@@ -5,7 +5,7 @@ Filename:   litlua.h
 Description:litlua.h
 
 Version:  1.0
-Created:  20:8:2015   17:27
+Created:  25:11:2018   17:27
 Revison:  none
 Compiler: gcc vc
 
@@ -64,16 +64,16 @@ namespace LitSpace {
 //多返回值调用,返回lua_returns<type1, type2, type3,...> 类型为std::tuple	
   template<typename lua_returns, typename ... ARGS>
   lua_returns rcall(lua_State* L, const char* name, ARGS ... args){
-    
-
-	//table 类型需要保持在栈内操作才有效
-    /*const int index =  lua_gettop(L);
-	guardfun g([index, L](){
-	  lua_settop(L, index);
-	});*/
-	static_assert(lua_returns::IS_RETURN);
+  	//table 类型需要保持在栈内操作才有效
+    /*
+    const int index =  lua_gettop(L);
+	  guardfun g([index, L](){
+	    lua_settop(L, index);
+	  });
+    */
+    static_assert(lua_returns::IS_RETURN);
     lua_pushcclosure(L, on_error, 0);
-	int nresult = lua_returns::NSIZE;
+    int nresult = lua_returns::NSIZE;
     int errfunc = lua_gettop(L);
     lua_getglobal(L, name);
     if (lua_isfunction(L, -1)){
@@ -82,7 +82,7 @@ namespace LitSpace {
     } else{
       print_error(L, "litlua call() attempt to call global `%s' (not a function)", name);
     }
-	int readindex = 0 - nresult;
+    int readindex = 0 - nresult;
     return lua_returns::reader(L, readindex);
   }
 
