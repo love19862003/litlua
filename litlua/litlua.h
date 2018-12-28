@@ -64,14 +64,13 @@ namespace LitSpace {
 //多返回值调用,返回lua_returns<type1, type2, type3,...> 类型为std::tuple	
   template<typename lua_returns, typename ... ARGS>
   lua_returns rcall(lua_State* L, const char* name, ARGS ... args){
-  	//table 类型需要保持在栈内操作才有效
-    /*
-    const int index =  lua_gettop(L);
-	  guardfun g([index, L](){
-	    lua_settop(L, index);
-	  });
-    */
     static_assert(lua_returns::IS_RETURN);
+    if (!lua_returns::HAS_TABLE){
+      const int index = lua_gettop(L);
+       	  guardfun g([index, L](){
+       	    lua_settop(L, index);
+      });
+    }
     lua_pushcclosure(L, on_error, 0);
     int nresult = lua_returns::NSIZE;
     int errfunc = lua_gettop(L);

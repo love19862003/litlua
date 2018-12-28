@@ -143,10 +143,12 @@ namespace LitSpace{
         lua_pushinteger(m_L, index);
         lua_gettable(m_L, m_index);
       } else{
-        lua_pushnil(nil);
+        lua_pushnil(m_L);
       }
       return pop<T>(m_L);
     }
+
+    
 
     template<typename T>
     T get(const std::string& name){
@@ -164,7 +166,7 @@ namespace LitSpace{
     lua_returns rcall(const char* name, ARGS ... args){
       if (validate()){
         int index = lua_gettop(m_L);
-		int nresult = lua_returns::NSIZE;
+        int nresult = lua_returns::NSIZE;
         lua_pushcclosure(m_L, on_error, 0);
         guardfun g([index, this](){
           lua_settop(m_L, index);
@@ -179,7 +181,7 @@ namespace LitSpace{
         } else{
           print_error(m_L, "litlua table call() attempt to call table function `%s' (not a function)", name);
         }
-		int readindex = 0 - nresult;
+        int readindex = 0 - nresult;
         return lua_returns::reader(m_L, readindex);
   
       } else{
@@ -211,7 +213,6 @@ namespace LitSpace{
       lua_getglobal(L, name);
       if (lua_istable(L, -1)){
         lua_pop(L, 1);
-
         lua_newtable(L);
         lua_setglobal(L, name);
         lua_getglobal(L, name);
@@ -232,101 +233,103 @@ namespace LitSpace{
 	//添加成员 k=v
     template<typename T>
     void set(const char* name, T object){
-		checkNil();
-		if (m_nil){ return; }
-		m_obj->set(name, object);
+		  checkNil();
+		  if (m_nil){ return; }
+		  m_obj->set(name, object);
     }
 
 	//添加成员 index=v
     template<typename T>
     bool add(T object){
-		checkNil();
-		if (m_nil){   return false; }
-		return m_obj->add(object);
+		  checkNil();
+		  if (m_nil){   return false; }
+		  return m_obj->add(object);
     }
 
 	//添加成员 k=new table
     table table::child(const char* name){
-		checkNil();
-		if (m_nil){  return nilTable(); }
-		table t(m_obj->state());
-		set(name, t);
-		return std::move(t);
+		  checkNil();
+		  if (m_nil){  return nilTable(); }
+		  table t(m_obj->state());
+		  set(name, t);
+		  return std::move(t);
     }
 
 	//添加成员 index=new table
     table table::child(){
-		checkNil();
-		if (m_nil){  return nilTable(); }
-		table t(m_obj->state());
-		add(t);
-		return std::move(t);
+		  checkNil();
+		  if (m_nil){  return nilTable(); }
+		  table t(m_obj->state());
+		  add(t);
+		  return std::move(t);
     }
 
 	//判断是否有成员 if table[k] != nil
     bool table::has(const char* name){
-		checkNil();
-		if (m_nil){  return false; }
-		return m_obj->has(name);
+		  checkNil();
+		  if (m_nil){  return false; }
+		  return m_obj->has(name);
     }
 
 	//判断是否有成员 if table[index] != nil
     bool table::has(int index){
-		checkNil();
-		if (m_nil){  return false; }
-		return m_obj->has(index);
+		  checkNil();
+		  if (m_nil){  return false; }
+		  return m_obj->has(index);
     }
 
 	//#table
     unsigned int table::len(){
-		checkNil();
-		if (m_nil){  return 0; }
-		return m_obj->length();
+		  checkNil();
+		  if (m_nil){  return 0; }
+		  return m_obj->length();
     }
 
 	//获取成员对象 v = table[k]
     template<typename T>
     T get(const char* name){
-		checkNil();
-		if (m_nil){  return T(); }
-		return m_obj->get<T>(name);
+      checkNil();
+      if (m_nil){ return T(); }
+      return m_obj->get<T>(name);
     }
 
 	//获取成员对象 v = table[index]
     template<typename T>
     T get(int index){
-		checkNil();
-		if (m_nil){  return T(); }
-		return m_obj->get<T>(index);
+		  checkNil();
+		  if (m_nil){  return T(); }
+		  return m_obj->get<T>(index);
     }
 
 
 	//多返回值成员函数调用 lua_returns = table.fun(args...)
     template<typename lua_returns, typename ... ARGS>
     lua_returns rcall(const char* name, ARGS ... obj){
-		checkNil();
-		if (m_nil){  return lua_returns(); }
-		return m_obj->rcall<lua_returns, ARGS ...>(name, obj...);
+		  checkNil();
+		  if (m_nil){  return lua_returns(); }
+		  return m_obj->rcall<lua_returns, ARGS ...>(name, obj...);
     }
 
 	
 	//单返回值成员函数调用 R = table.fun(args...)
     template<typename R, typename ... ARGS>
     R call(const char* name, ARGS ... obj){
-		checkNil();
-		if (m_nil) { lua_returns<R> r;  return  r.get(); }
-		auto r = m_obj->rcall<lua_returns<R>, ARGS ...>(name, obj...);
-		return r.get();
+		  checkNil();
+		  if (m_nil) { lua_returns<R> r;  return  r.get(); }
+		  auto r = m_obj->rcall<lua_returns<R>, ARGS ...>(name, obj...);
+		  return r.get();
     }
 
 	void checkNil() {
-		if (m_obj){
-			m_nil = !m_obj->validate();
-		}
-		else {
-			m_nil = true;
-		}
+ 		if (m_obj){
+ 			m_nil = !m_obj->validate();
+ 		}
+ 		else {
+ 			m_nil = true;
+ 		}
 	}
+
+  bool isNil(){ /*checkNil();*/ return m_nil; }
     
 	void reset() { m_nil = true; m_obj.reset(); }
 
@@ -365,6 +368,29 @@ namespace LitSpace{
       lua_pushvalue(L, ret.m_obj->m_index);
     else
       lua_pushnil(L);
+  }
+
+
+  template<>
+  table table_impl::get<table>(int index){
+    if (validate()){
+      lua_pushinteger(m_L, index);
+      lua_gettable(m_L, m_index);
+    } else{
+      lua_pushnil(m_L);
+    }
+    return read<table>(m_L, m_index);
+  }
+
+  template<>
+  table table_impl::get<table>(const std::string& name){
+    if (validate()){
+      lua_pushstring(m_L, name.data());
+      lua_gettable(m_L, m_index);
+    } else{
+      lua_pushnil(m_L);
+    }
+    return read<table>(m_L, m_index);
   }
 
 }

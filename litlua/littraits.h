@@ -109,11 +109,24 @@ namespace LitSpace {
     static args reader(lua_State* L, int& index){ return args();}
   };
 
+
+
+  template<typename T, typename ... ARGS>
+  struct HasTable{
+    static constexpr bool HAS_TABLE = HasTable<T>::HAS_TABLE || HasTable<ARGS ...>::HAS_TABLE;
+  };
+
+  template<typename T>
+  struct HasTable<T>{
+    static constexpr bool HAS_TABLE = std::is_same<T, table>::value;
+  };
+
   //lua执行结果对象
   template<typename T, typename ... ARGS>
   struct lua_returns : public std::tuple<T,  ARGS ...>{
     static constexpr size_t NSIZE =  1 + sizeof...(ARGS);
     static constexpr bool IS_RETURN = true;
+    static constexpr bool HAS_TABLE = HasTable<T, ARGS ...>::HAS_TABLE;
     typedef lua_returns args;
     static args reader(lua_State* L, int& index){
       args r; 
@@ -121,7 +134,6 @@ namespace LitSpace {
       return r;
     }
     bool _err = false;
-    bool _has_table = false;
     std::string _error_msg = "";
 
     T& get(){
@@ -134,13 +146,12 @@ namespace LitSpace {
   struct lua_returns<void> :public std::tuple<> {
 	  static constexpr size_t NSIZE = 0;
 	  static constexpr bool IS_RETURN = true;
-	  static constexpr bool CLEAR_STACK = true;
+    static constexpr bool HAS_TABLE = false;
 	  typedef lua_returns<void> args;
 	  static args reader(lua_State* L, int& index) {
 		  return lua_returns<void>();
 	  }
 	  bool _err = false;
-	  bool _has_table = false;
 	  std::string _error_msg = "";
 
 	  void get() {
