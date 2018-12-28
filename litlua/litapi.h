@@ -49,6 +49,17 @@ namespace LitSpace {
 		}
 	}
 
+  //
+  inline void  info(lua_State *L, const char* fmt, ...){
+    char text[4096];
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(text, sizeof(text), fmt, args);
+    va_end(args);
+    printf("%s\n", text);
+
+  }
+
 	//打印栈内对象信息
 	inline void  enum_stack(lua_State *L) {
 		int top = lua_gettop(L);
@@ -87,6 +98,45 @@ namespace LitSpace {
 		}
 		print_error(L, "%s", "-------------------------");
 	}
+
+  //打印栈内对象信息
+  inline void  debug_stack(lua_State *L){
+    int top = lua_gettop(L);
+    info(L, "%s", "----------stack----------");
+    info(L, "Type:%d", top);
+    for (int i = 1; i <= lua_gettop(L); ++i){
+      switch (lua_type(L, i)){
+      case LUA_TNIL:
+        info(L, "\t%s", lua_typename(L, lua_type(L, i)));
+        break;
+      case LUA_TBOOLEAN:
+        info(L, "\t%s    %s", lua_typename(L, lua_type(L, i)), lua_toboolean(L, i) ? "true" : "false");
+        break;
+      case LUA_TLIGHTUSERDATA:
+        info(L, "\t%s    0x%08p", lua_typename(L, lua_type(L, i)), lua_topointer(L, i));
+        break;
+      case LUA_TNUMBER:
+        info(L, "\t%s    %f", lua_typename(L, lua_type(L, i)), lua_tonumber(L, i));
+        break;
+      case LUA_TSTRING:
+        info(L, "\t%s    %s", lua_typename(L, lua_type(L, i)), lua_tostring(L, i));
+        break;
+      case LUA_TTABLE:
+        info(L, "\t%s    0x%08p", lua_typename(L, lua_type(L, i)), lua_topointer(L, i));
+        break;
+      case LUA_TFUNCTION:
+        info(L, "\t%s()  0x%08p", lua_typename(L, lua_type(L, i)), lua_topointer(L, i));
+        break;
+      case LUA_TUSERDATA:
+        info(L, "\t%s    0x%08p", lua_typename(L, lua_type(L, i)), lua_topointer(L, i));
+        break;
+      case LUA_TTHREAD:
+        info(L, "\t%s", lua_typename(L, lua_type(L, i)));
+        break;
+      }
+    }
+    info(L, "%s", "-------------------------");
+  }
 	
 	 //错误调试栈信息
 	inline void call_stack(lua_State* L, int n){

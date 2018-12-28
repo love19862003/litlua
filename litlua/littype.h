@@ -19,6 +19,7 @@ Organization:
 #include <memory>
 #include <assert.h>
 #include <string>
+#include <iostream>
 #include "lua.hpp"
 
 namespace LitSpace{
@@ -74,8 +75,8 @@ namespace LitSpace{
     bool validate(){
       if (nullptr == m_p) return false;
       if (lua_topointer(m_L, m_index) == m_p) return true;
-      int top = lua_gettop(m_L);
-      for (int i = 1; i <= top; ++i){
+
+      for (int i = 1; i <= lua_gettop(m_L); ++i){
         if (lua_topointer(m_L, i) == m_p){
           m_index = i;
           return true;
@@ -192,6 +193,28 @@ namespace LitSpace{
       return e; 
     }
 
+    void debug(){
+      lua_pushnil(m_L); 
+      while (lua_next(m_L, m_index) != 0){
+        if (lua_isnumber(m_L, -2))
+          std::cout << "key:" << lua_tonumber(m_L, -2) << '\t';
+        else if (lua_isstring(m_L, -2))
+          std::cout << "key:" << lua_tostring(m_L, -2) << '\t';
+        if (lua_isnumber(m_L, -1))
+          std::cout << "value:" << lua_tonumber(m_L, -1) << std::endl;
+        else if (lua_isstring(m_L, -1))
+          std::cout << "value:" << lua_tostring(m_L, -1) << std::endl;
+        else if (lua_istable(m_L, -1))
+          std::cout << "value : table:" << lua_topointer(m_L, -1) << std::endl;
+
+        //printf("%s - %s\n",
+         //      lua_typename(m_L, lua_type(m_L, -2)),
+        //       lua_typename(m_L, lua_type(m_L, -1)));
+        lua_pop(m_L, 1);
+      }
+      //lua_pop(m_L, 1);
+    }
+
     lua_State* state(){ return m_L; }
 
 
@@ -229,6 +252,13 @@ namespace LitSpace{
     table(const table& input):m_nil(input.m_nil), m_obj(input.m_obj){
 
     };
+
+    void debug(){
+      if (!isNil()){
+        m_obj->debug();
+      }
+      
+    }
 
 	//ÃÌº”≥…‘± k=v
     template<typename T>
@@ -379,7 +409,7 @@ namespace LitSpace{
     } else{
       lua_pushnil(m_L);
     }
-    return read<table>(m_L, m_index);
+    return read<table>(m_L, -1);
   }
 
   template<>
@@ -390,7 +420,7 @@ namespace LitSpace{
     } else{
       lua_pushnil(m_L);
     }
-    return read<table>(m_L, m_index);
+    return read<table>(m_L, -1);
   }
 
 }
