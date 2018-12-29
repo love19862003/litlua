@@ -392,7 +392,7 @@ namespace LitSpace {
     void set(lua_State *L){ 
       T* t = read<T*>(L, 1);
       if(!check(L, t)) return ;
-      T->*(_var) = read<V>(L, 3); 
+      t->*(_var) = read<V>(L, 3); 
     }
 
     bool check(lua_State *L, T* t){
