@@ -47,7 +47,8 @@ namespace LitSpace{
   inline T pop(lua_State *L){ T t = read<T>(L, -1); lua_pop(L, 1); return t; }
 
   template<>
-  inline void  pop(lua_State *L){ lua_pop(L, 1); }
+  inline void  pop(lua_State *L){ lua_pop(L, 1); }
+
   struct lua_value{
     virtual void to_lua(lua_State *L) = 0;
   };
@@ -376,7 +377,8 @@ namespace LitSpace{
   template<>
   inline nil read(lua_State *L, int index){
     return nil(lua_isnil(L, index));
-  }
+  }
+
   template<>
   inline bool check<table>(lua_State* L, int index){
     return lua_istable(L, index);
