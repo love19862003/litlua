@@ -21,6 +21,7 @@ Organization:
 #include <string>
 #include <iostream>
 #include "lua.hpp"
+#include "littraits.h"
 
 namespace LitSpace{
 

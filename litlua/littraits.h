@@ -26,10 +26,13 @@ Organization:
 #include <assert.h>
 #include <tuple>
 #include <functional>
-#include "littype.h"
 
 
 namespace LitSpace {
+	struct lua_value;
+	struct table;
+	struct nil;
+
 	template <std::size_t... M>
 	struct _indices {};
 
