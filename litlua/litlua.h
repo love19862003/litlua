@@ -32,7 +32,7 @@ Organization:
 
 namespace LitSpace {
 
-  //¾²Ì¬º¯Êı°ó¶¨
+  //é™æ€å‡½æ•°ç»‘å®š
 	template<typename F>
 	void add_fun(lua_State* L, const char* name, F func){
 		lua_pushlightuserdata(L, (void*)func);
@@ -47,13 +47,13 @@ namespace LitSpace {
 		lua_setglobal(L, name);
 	}
 
-  //È«¾Ö±äÁ¿
+  //å…¨å±€å˜é‡
 	template<typename T>
 	void set(lua_State* L, const char* name, T object){
 		push(L, object);
 		lua_setglobal(L, name);
 	}
- //»ñÈ¡È«¾Ö±äÁ¿
+ //è·å–å…¨å±€å˜é‡
 	template<typename T>
 	T get(lua_State* L, const char* name){
 		lua_getglobal(L, name);
@@ -61,7 +61,7 @@ namespace LitSpace {
 	}
 
 
-//¶à·µ»ØÖµµ÷ÓÃ,·µ»Ølua_returns<type1, type2, type3,...> ÀàĞÍÎªstd::tuple	
+//å¤šè¿”å›å€¼è°ƒç”¨,è¿”å›lua_returns<type1, type2, type3,...> ç±»å‹ä¸ºstd::tuple	
   template<typename lua_returns, typename ... ARGS>
   lua_returns rcall(lua_State* L, const char* name, ARGS ... args){
     static_assert(lua_returns::IS_RETURN);
@@ -85,14 +85,14 @@ namespace LitSpace {
     return lua_returns::reader(L, readindex);
   }
 
- //µ¥·µ»ØÖµµ÷ÓÃ
+ //å•è¿”å›å€¼è°ƒç”¨
 	template<typename R, typename ... ARGS>
 	R call(lua_State* L, const char* name, ARGS ... args){
 		lua_returns<R> r = rcall<lua_returns<R>>(L, name, args...);
 		return r.get();
 	}
 
- //Àà×¢²á
+ //ç±»æ³¨å†Œ
 	template<typename T>
 	void class_reg(lua_State* L, const char* name){
 		class_name<T>::name(name);
@@ -116,7 +116,7 @@ namespace LitSpace {
 
 		lua_setglobal(L, name);
 	}
-//Àà¼Ì³Ğ¹ØÏµ
+//ç±»ç»§æ‰¿å…³ç³»
 	template<typename T, typename P>
 	void class_parent(lua_State* L){
 		static_assert(std::has_virtual_destructor<T>::value );
@@ -130,7 +130,7 @@ namespace LitSpace {
 		}
 		lua_pop(L, 1);
 	}
- //Àà¹¹Ôìº¯Êı
+ //ç±»æ„é€ å‡½æ•°
 	template<typename T, typename F>
 	void class_new(lua_State* L, F func){
 		push_meta(L, class_name<T>::name());
@@ -143,7 +143,7 @@ namespace LitSpace {
 		}
 		lua_pop(L, 1);
 	}
-//Àà³ÉÔ±º¯Êı
+//ç±»æˆå‘˜å‡½æ•°
 	template<typename T, typename F>
 	void class_fun(lua_State* L, const char* name, F func){
 		push_meta(L, class_name<T>::name());
@@ -155,7 +155,7 @@ namespace LitSpace {
 		}
 		lua_pop(L, 1);
 	}
- //Àà³ÉÔ±±äÁ¿
+ //ç±»æˆå‘˜å˜é‡
 	template<typename T, typename BASE, typename VAR>
 	void class_mem(lua_State* L, const char* name, VAR BASE::*val){
 		push_meta(L, class_name<T>::name());

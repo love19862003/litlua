@@ -24,19 +24,19 @@ Organization:
 
 namespace LitSpace{
 
-  //¼ì²é¶ÔÏóÊÇ·ñÄÜ×ª»»³É¶ÔÓ¦·µ»ØÖµ
+  //æ£€æŸ¥å¯¹è±¡æ˜¯å¦èƒ½è½¬æ¢æˆå¯¹åº”è¿”å›å€¼
   template<typename T>
   inline bool check(lua_State* L, int index){
     return checklua2type<T>(L, index);
   }
 
-  //¶ÁÈ¡¶ÔÏó
+  //è¯»å–å¯¹è±¡
   template<typename T>
   inline T read(lua_State* L, int index){
     return lua2type<T>(L, index);
   }
 
-  //ÈëÕ»¶ÔÏó
+  //å…¥æ ˆå¯¹è±¡
   template<typename T>
   inline void push(lua_State *L, T ret){
     type2lua<T>(L, ret); 
@@ -52,14 +52,14 @@ namespace LitSpace{
     virtual void to_lua(lua_State *L) = 0;
   };
 
-  //nil ¶ÔÏó
+  //nil å¯¹è±¡
   struct nil{
     nil():m_nil(true){}
     nil(bool n):m_nil(n){}
     bool m_nil = true;
   };
 
-  //table¶ÔÏó
+  //tableå¯¹è±¡
   struct table_impl{
     table_impl(lua_State* L, int index): m_L(L), m_index(index), m_p(nullptr){
       if (lua_isnil(m_L, m_index)){
@@ -162,7 +162,7 @@ namespace LitSpace{
       return pop<T>(m_L);
     }
 
-	//µ÷ÓÃÍêºó,»á°ÑÕ»×´Ì¬±£´æ³Éµ÷ÓÃÇ°µÄ¶ÔÏó
+	//è°ƒç”¨å®Œå,ä¼šæŠŠæ ˆçŠ¶æ€ä¿å­˜æˆè°ƒç”¨å‰çš„å¯¹è±¡
     template<typename lua_returns, typename ... ARGS>
     lua_returns rcall(const char* name, ARGS ... args){
       if (validate()){
@@ -224,7 +224,7 @@ namespace LitSpace{
   };
 
 
-  //lua tableÏà¹Ø£¬±ØĞë±£Ö¤tableÔÚÕ»ÉÏ£¬·ñÔò»áÎŞĞ§
+  //lua tableç›¸å…³ï¼Œå¿…é¡»ä¿è¯tableåœ¨æ ˆä¸Šï¼Œå¦åˆ™ä¼šæ— æ•ˆ
   struct table{
     table():m_nil(true), m_obj(nullptr){}
 
@@ -260,7 +260,7 @@ namespace LitSpace{
       
     }
 
-	//Ìí¼Ó³ÉÔ± k=v
+	//æ·»åŠ æˆå‘˜ k=v
     template<typename T>
     void set(const char* name, T object){
 		  checkNil();
@@ -268,7 +268,7 @@ namespace LitSpace{
 		  m_obj->set(name, object);
     }
 
-	//Ìí¼Ó³ÉÔ± index=v
+	//æ·»åŠ æˆå‘˜ index=v
     template<typename T>
     bool add(T object){
 		  checkNil();
@@ -276,8 +276,8 @@ namespace LitSpace{
 		  return m_obj->add(object);
     }
 
-	//Ìí¼Ó³ÉÔ± k=new table
-    table table::child(const char* name){
+	//æ·»åŠ æˆå‘˜ k=new table
+    table child(const char* name){
 		  checkNil();
 		  if (m_nil){  return nilTable(); }
 		  table t(m_obj->state());
@@ -285,8 +285,8 @@ namespace LitSpace{
 		  return std::move(t);
     }
 
-	//Ìí¼Ó³ÉÔ± index=new table
-    table table::child(){
+	//æ·»åŠ æˆå‘˜ index=new table
+    table child(){
 		  checkNil();
 		  if (m_nil){  return nilTable(); }
 		  table t(m_obj->state());
@@ -294,28 +294,28 @@ namespace LitSpace{
 		  return std::move(t);
     }
 
-	//ÅĞ¶ÏÊÇ·ñÓĞ³ÉÔ± if table[k] != nil
-    bool table::has(const char* name){
+	//åˆ¤æ–­æ˜¯å¦æœ‰æˆå‘˜ if table[k] != nil
+    bool has(const char* name){
 		  checkNil();
 		  if (m_nil){  return false; }
 		  return m_obj->has(name);
     }
 
-	//ÅĞ¶ÏÊÇ·ñÓĞ³ÉÔ± if table[index] != nil
-    bool table::has(int index){
+	//åˆ¤æ–­æ˜¯å¦æœ‰æˆå‘˜ if table[index] != nil
+    bool has(int index){
 		  checkNil();
 		  if (m_nil){  return false; }
 		  return m_obj->has(index);
     }
 
 	//#table
-    unsigned int table::len(){
+    unsigned int len(){
 		  checkNil();
 		  if (m_nil){  return 0; }
 		  return m_obj->length();
     }
 
-	//»ñÈ¡³ÉÔ±¶ÔÏó v = table[k]
+	//è·å–æˆå‘˜å¯¹è±¡ v = table[k]
     template<typename T>
     T get(const char* name){
       checkNil();
@@ -323,7 +323,7 @@ namespace LitSpace{
       return m_obj->get<T>(name);
     }
 
-	//»ñÈ¡³ÉÔ±¶ÔÏó v = table[index]
+	//è·å–æˆå‘˜å¯¹è±¡ v = table[index]
     template<typename T>
     T get(int index){
 		  checkNil();
@@ -332,7 +332,7 @@ namespace LitSpace{
     }
 
 
-	//¶à·µ»ØÖµ³ÉÔ±º¯Êıµ÷ÓÃ lua_returns = table.fun(args...)
+	//å¤šè¿”å›å€¼æˆå‘˜å‡½æ•°è°ƒç”¨ lua_returns = table.fun(args...)
     template<typename lua_returns, typename ... ARGS>
     lua_returns rcall(const char* name, ARGS ... obj){
 		  checkNil();
@@ -341,7 +341,7 @@ namespace LitSpace{
     }
 
 	
-	//µ¥·µ»ØÖµ³ÉÔ±º¯Êıµ÷ÓÃ R = table.fun(args...)
+	//å•è¿”å›å€¼æˆå‘˜å‡½æ•°è°ƒç”¨ R = table.fun(args...)
     template<typename R, typename ... ARGS>
     R call(const char* name, ARGS ... obj){
 		  checkNil();
@@ -363,8 +363,8 @@ namespace LitSpace{
     
 	void reset() { m_nil = true; m_obj.reset(); }
 
-    std::shared_ptr<table_impl>  m_obj;	 //ÒıÓÃ¶ÔÏó
-    bool  m_nil = false;				 //ÊÇ·ñÊÇnil
+    std::shared_ptr<table_impl>  m_obj;	 //å¼•ç”¨å¯¹è±¡
+    bool  m_nil = false;				 //æ˜¯å¦æ˜¯nil
     static table nilTable(){ static table t;  return t; }
   };
 

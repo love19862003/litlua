@@ -51,7 +51,7 @@ namespace LitSpace {
   typedef guard<std::function<void()>> guardfun;
 
 
-  //¶ÁÈ¡Õ»ÄÚÁ¬ĞøÊı¾İ,Ö÷ÒªÊÇÊµÏÖ¶ÁÈ¡Cº¯Êıµ÷ÓÃ²ÎÊıºÍlua·µ»ØÖµ
+  //è¯»å–æ ˆå†…è¿ç»­æ•°æ®,ä¸»è¦æ˜¯å®ç°è¯»å–Cå‡½æ•°è°ƒç”¨å‚æ•°å’Œluaè¿”å›å€¼
   template<size_t N, size_t M, typename T>
   struct tuple_reader{
     static constexpr size_t I = M - N;
@@ -94,7 +94,7 @@ namespace LitSpace {
     }
   };
 
-  //lua´«Èë²ÎÊıÁĞ±í¶ÔÏó
+  //luaä¼ å…¥å‚æ•°åˆ—è¡¨å¯¹è±¡
   template<typename ... ARGS>
   struct lua_args : public std::tuple<  ARGS ...>{
     static constexpr size_t NSIZE = sizeof...(ARGS);
@@ -121,7 +121,7 @@ namespace LitSpace {
     static constexpr bool HAS_TABLE = std::is_same<T, table>::value;
   };
 
-  //luaÖ´ĞĞ½á¹û¶ÔÏó
+  //luaæ‰§è¡Œç»“æœå¯¹è±¡
   template<typename T, typename ... ARGS>
   struct lua_returns : public std::tuple<T,  ARGS ...>{
     static constexpr size_t NSIZE =  1 + sizeof...(ARGS);
@@ -160,7 +160,7 @@ namespace LitSpace {
   };
 
 
-   //È«¾Öº¯ÊıµÄ¶à²ÎÊıÕ¹¿ª
+   //å…¨å±€å‡½æ•°çš„å¤šå‚æ•°å±•å¼€
 	template <typename Ret, typename... ARGS, std::size_t... N>
 	inline Ret litFunciton(const std::function<Ret(ARGS...)>& func, const std::tuple<ARGS...>& args, _indices<N...>) {
 		return func(std::get<N>(args)...);
@@ -171,7 +171,7 @@ namespace LitSpace {
 		return litFunciton(func, args, typename _indices_builder<sizeof...(ARGS)>::type());
 	}
 
-	//Àà³ÉÔ±º¯ÊıµÄ¶à²ÎÊıÕ¹¿ª
+	//ç±»æˆå‘˜å‡½æ•°çš„å¤šå‚æ•°å±•å¼€
 	template <typename Ret, typename T, typename... ARGS, std::size_t... N>
 	inline Ret classLitFunciton(Ret(T::*func)(ARGS ...), T* t, const std::tuple<ARGS...>& args, _indices<N...>) {
 		return (t->*func)(std::get<N>(args)...);
@@ -182,7 +182,7 @@ namespace LitSpace {
 		return classLitFunciton(func, t, args, typename _indices_builder<sizeof...(ARGS)>::type());
 	}
 
-	//Àà¹¹Ôìº¯Êı¶à²ÎÊıÕ¹¿ª
+	//ç±»æ„é€ å‡½æ•°å¤šå‚æ•°å±•å¼€
 	template <typename T, typename... ARGS, std::size_t... N>
 	inline T* constructorFun(void* p, const std::tuple<ARGS...>& args, _indices<N...>) {
 		return new(p)T(std::get<N>(args)...);
@@ -200,7 +200,7 @@ namespace LitSpace {
 
   inline void push_args(lua_State *L){}
 
-  //µ÷ÓÃ²ÎÊıÈëÕ»
+  //è°ƒç”¨å‚æ•°å…¥æ ˆ
   template<typename T>
   inline void push_args(lua_State *L, T t){
     push(L, t);
@@ -212,7 +212,7 @@ namespace LitSpace {
     push_args(L, args...);
   }
 
-  //È«¾Öº¯ÊıºÍstd::function·´Éä
+  //å…¨å±€å‡½æ•°å’Œstd::functionåå°„
   template<typename ... ARGS>
   struct functor : public lua_args< ARGS ...>{
     template<typename Ret>
@@ -260,7 +260,7 @@ namespace LitSpace {
     }
   };
 
-  //Àà³ÉÔ±º¯Êı·´Éä
+  //ç±»æˆå‘˜å‡½æ•°åå°„
   template< typename T, typename ... ARGS>
   struct classfunctor : public lua_args< ARGS ...>{
     template<typename Ret>
@@ -293,7 +293,7 @@ namespace LitSpace {
   };
 
 
-  //ÕûÊıÀàĞÍÏà¹Ø²Ù×÷
+  //æ•´æ•°ç±»å‹ç›¸å…³æ“ä½œ
   template<typename T>
   struct int_action{
     static constexpr bool value = std::is_integral<T>::value;
@@ -324,7 +324,7 @@ namespace LitSpace {
     }
   };
 
-  //¸¡µãÊıÀàĞÍÏà¹Ø²Ù×÷
+  //æµ®ç‚¹æ•°ç±»å‹ç›¸å…³æ“ä½œ
   template<typename T>
   struct number_action{
     static constexpr bool value = std::is_floating_point<T>::value;
@@ -339,7 +339,7 @@ namespace LitSpace {
     }
   };
 
-  //×Ö·û´®ÀàĞÍÏà¹Ø²Ù×÷
+  //å­—ç¬¦ä¸²ç±»å‹ç›¸å…³æ“ä½œ
   template<typename T>
   struct str_action{
     static constexpr bool value = std::is_same<T, char*>::value || std::is_same<T, const char*>::value;
@@ -372,7 +372,7 @@ namespace LitSpace {
 
 
 
-  //³ÉÔ±±äÁ¿
+  //æˆå‘˜å˜é‡
   struct var_base{
     virtual ~var_base(){};
     virtual void get(lua_State *L) = 0;
@@ -405,19 +405,19 @@ namespace LitSpace {
     }
   };
 
-	//İÍÈ¡Ô­Ê¼ÀàĞÍ
+	//èƒå–åŸå§‹ç±»å‹
  	template<typename A>
  	struct base_type { //std::remove_cvref
  		typedef  typename std::remove_cv<typename std::remove_pointer< typename std::remove_reference<A>::type >::type >::type  type;
  	};
 
-	//°ó¶¨classÀàĞÍ
+	//ç»‘å®šclassç±»å‹
 	template<typename A>
 	struct class_type {	 
 		typedef typename base_type<A>::type type;
 	};	  
 
-	//°ó¶¨classÃû×Ö
+	//ç»‘å®šclassåå­—
 	template<typename T>
 	struct class_name {
 		static const char* name(const char* name = NULL) {
@@ -427,7 +427,7 @@ namespace LitSpace {
 		}
 	};
 
-	//ÅĞ¶ÏÊÇ·ñÊÇ¶ÔÏóÀàĞÍ
+	//åˆ¤æ–­æ˜¯å¦æ˜¯å¯¹è±¡ç±»å‹
 	template<typename A>
 	struct is_obj { 
 		static constexpr bool value = !std::is_integral<A>::value  && !std::is_floating_point<A>::value;// true;
@@ -440,7 +440,7 @@ namespace LitSpace {
 	template<> struct is_obj<nil> { static constexpr bool value = false; };
 	template<> struct is_obj<std::string> { static constexpr bool value = false; };
 
-	//void*Ö¸Õë×ª»»¶ÔÓ¦ÀàĞÍ·´Éä
+	//void*æŒ‡é’ˆè½¬æ¢å¯¹åº”ç±»å‹åå°„
 	template<typename T>
 	struct void2val { 
 		static T invoke(void* input) {return *(T*)input;} 
@@ -470,7 +470,7 @@ namespace LitSpace {
 		}
 	};
 
-	//c++¶ÔÏóµÄµØÖ·£¬ ptr ref value ¶¼°ó¶¨Ò»¸öµØÖ·
+	//c++å¯¹è±¡çš„åœ°å€ï¼Œ ptr ref value éƒ½ç»‘å®šä¸€ä¸ªåœ°å€
 	struct user{
 		user(void* p) : m_p(p){}
 		virtual ~user() {}
@@ -484,7 +484,7 @@ namespace LitSpace {
 		} 
 	};
 
-	//luaµ½Ã¶¾ÙµÄ·´Éä
+	//luaåˆ°æšä¸¾çš„åå°„
 	template<typename T>
 		struct lua2enum {
 			static T invoke(lua_State *L, int index) { 
@@ -495,7 +495,7 @@ namespace LitSpace {
 		}
 	};
 
-	//luaµ½¶ÔÏóµÄ·´Éä£¬µ±ÊÇ·µ»ØÖµµÄÊ±ºò£¬»áÈ¥µ÷ÓÃ¶ÔÏóµÄcheck£¬×÷Îª²ÎÊıµÄÊ±ºòÖ±½Ó´«µİ
+	//luaåˆ°å¯¹è±¡çš„åå°„ï¼Œå½“æ˜¯è¿”å›å€¼çš„æ—¶å€™ï¼Œä¼šå»è°ƒç”¨å¯¹è±¡çš„checkï¼Œä½œä¸ºå‚æ•°çš„æ—¶å€™ç›´æ¥ä¼ é€’
 	template<typename T>
 	struct lua2object{
 		static T invoke(lua_State *L, int index){
@@ -516,7 +516,7 @@ namespace LitSpace {
 		}
 	};
 
-	//lua×ª»»µ½¶ÔÓ¦ÀàĞÍÊı¾İ nil tableÍ¨¹ıreadµÄÆ«ÌØ»¯ÊµÏÖ
+	//luaè½¬æ¢åˆ°å¯¹åº”ç±»å‹æ•°æ® nil tableé€šè¿‡readçš„åç‰¹åŒ–å®ç°
 	template<typename T>
 	T lua2type(lua_State *L, int index){
 		return std::conditional< int_action<T>::value, int_action<T>,
@@ -529,8 +529,8 @@ namespace LitSpace {
 
 	}
 
-	//Ö÷Òª¼ì²â·µ»ØÖµÊÇ·ñºÏ·¨
-	//¼ì²âluaÄÜ·ñ×ª»»µ½¶ÔÓ¦ÀàĞÍ nil tableÍ¨¹ıreadµÄÆ«ÌØ»¯ÊµÏÖ
+	//ä¸»è¦æ£€æµ‹è¿”å›å€¼æ˜¯å¦åˆæ³•
+	//æ£€æµ‹luaèƒ½å¦è½¬æ¢åˆ°å¯¹åº”ç±»å‹ nil tableé€šè¿‡readçš„åç‰¹åŒ–å®ç°
 	  template<typename T>
 	  bool checklua2type(lua_State *L, int index){
 		return std::conditional< int_action<T>::value, int_action<T>,
@@ -542,7 +542,7 @@ namespace LitSpace {
 		>::type::check(L, index);
 	  }
 
-	//classÀàĞÍ°ó¶¨¶ÔÏó
+	//classç±»å‹ç»‘å®šå¯¹è±¡
 	template<typename T>
 	struct val2user : user{
 		template<typename ... ARGS>
@@ -562,7 +562,7 @@ namespace LitSpace {
 		ref2user(T& t) : user(&t) {}
 	};
 
-	//classÀàĞÍ°ó¶¨lua¶ÔÏó
+	//classç±»å‹ç»‘å®šluaå¯¹è±¡
 	template<typename T>
 	struct val2lua {
 		static void invoke(lua_State *L, T& input) {
@@ -585,7 +585,7 @@ namespace LitSpace {
 		} 
 	};
 
-	//Ã¶¾Ù×ªlua
+	//æšä¸¾è½¬lua
 	template<typename T>
 	struct enum2lua {
 		static void push(lua_State *L, T val) { 
@@ -593,7 +593,7 @@ namespace LitSpace {
 		}
 	};
 
-	//class¶ÔÏóµ½lua
+	//classå¯¹è±¡åˆ°lua
 	template<typename T>
 	struct object2lua{
 		static void push(lua_State *L, T val){
@@ -611,7 +611,7 @@ namespace LitSpace {
 		}
 	};
 
-	//ÈëÕ»·´Éä
+	//å…¥æ ˆåå°„
 	template<typename T>
 	void type2lua(lua_State *L, T val){
 		//std::conditional<std::is_enum<T>::value, enum2lua<T>, object2lua<T>>::type::push(L, val);
@@ -624,13 +624,13 @@ namespace LitSpace {
 		>::type::push(L, val);
 	}
 
-	//»ñÈ¡Cº¯Êı±Õ°ü
+	//è·å–Cå‡½æ•°é—­åŒ…
 	template<typename T>
 	T upvalue_(lua_State *L){
 		return user2type<T>::invoke(L, lua_upvalueindex(1));
 	}
 
-	//È«¾Öº¯Êı±Õ°üÈëÕ»
+	//å…¨å±€å‡½æ•°é—­åŒ…å…¥æ ˆ
 	template<typename R, typename ... ARGS >
 	void push_function(lua_State *L, R(*func)(ARGS ...)) {
 		(void)func;
@@ -638,7 +638,7 @@ namespace LitSpace {
 	}
 
 
-	//std::function±Õ°üÈëÕ» funcµÄ×÷ÓÃÓòºÍÓĞĞ§ÆÚ»ØÓ°Ïìµ÷ÓÃ
+	//std::functioné—­åŒ…å…¥æ ˆ funcçš„ä½œç”¨åŸŸå’Œæœ‰æ•ˆæœŸå›å½±å“è°ƒç”¨
 	template<typename R, typename ... ARGS >
 	void push_function2(lua_State *L, const std::function<R( ARGS...)>& func) {
 		(void)func;
@@ -646,14 +646,14 @@ namespace LitSpace {
 	}
 
 
-	//³ÉÔ±º¯Êı±Õ°üÈëÕ»
+	//æˆå‘˜å‡½æ•°é—­åŒ…å…¥æ ˆ
 	template<typename R, typename T, typename ... ARGS >
 	void push_mfunctor(lua_State *L, R(T::*func)(ARGS ...)) {
 		(void)func;
 		lua_pushcclosure(L, classfunctor<T, ARGS...>::invoke<R>, 1);
 	}
 
-	//¹¹Ôìº¯ÊıÈëÕ»
+	//æ„é€ å‡½æ•°å…¥æ ˆ
 	template<typename T, typename ... ARGS>
 	int constructor(lua_State *L) {
 		val2user<T>* p = (val2user<T>*)lua_newuserdata(L, sizeof(val2user<T>));
@@ -664,7 +664,7 @@ namespace LitSpace {
 		return 1;
 	}
 
-	//Îö¹¹º¯Êı
+	//ææ„å‡½æ•°
 	template<typename T>
 	int destroyer(lua_State *L) {
 		((user*)lua_touserdata(L, 1))->~user();

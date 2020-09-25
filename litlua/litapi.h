@@ -25,12 +25,12 @@ Organization:
 #include "litlua.h"
 namespace LitSpace {
 
-	//lua °æ±¾ĞÅÏ¢
+	//lua ç‰ˆæœ¬ä¿¡æ¯
 	inline std::string version() {
 		return LUA_RELEASE;
 	}
 
-	//print´íÎóĞÅÏ¢ 
+	//printé”™è¯¯ä¿¡æ¯ 
 	inline void  print_error(lua_State *L, const char* fmt, ...) {
 		char text[4096];
 		va_list args;
@@ -60,7 +60,7 @@ namespace LitSpace {
 
   }
 
-	//´òÓ¡Õ»ÄÚ¶ÔÏóĞÅÏ¢
+	//æ‰“å°æ ˆå†…å¯¹è±¡ä¿¡æ¯
 	inline void  enum_stack(lua_State *L) {
 		int top = lua_gettop(L);
 		print_error(L, "%s", "----------stack----------");
@@ -99,7 +99,7 @@ namespace LitSpace {
 		print_error(L, "%s", "-------------------------");
 	}
 
-  //´òÓ¡Õ»ÄÚ¶ÔÏóĞÅÏ¢
+  //æ‰“å°æ ˆå†…å¯¹è±¡ä¿¡æ¯
   inline void  debug_stack(lua_State *L){
     int top = lua_gettop(L);
     info(L, "%s", "----------stack----------");
@@ -138,7 +138,7 @@ namespace LitSpace {
     info(L, "%s", "-------------------------");
   }
 	
-	 //´íÎóµ÷ÊÔÕ»ĞÅÏ¢
+	 //é”™è¯¯è°ƒè¯•æ ˆä¿¡æ¯
 	inline void call_stack(lua_State* L, int n){
 		lua_Debug ar;
 		if (lua_getstack(L, n, &ar) == 1){
@@ -161,8 +161,8 @@ namespace LitSpace {
 		}
 	}
 
-	//´íÎó´¦Àíº¯Êı
-	inline int on_error(lua_State *L) {
+	//é”™è¯¯å¤„ç†å‡½æ•°
+	static int on_error(lua_State *L) {
 		print_error(L, "%s", lua_tostring(L, -1));
 		call_stack(L, 0);
 		return 1;
@@ -205,7 +205,7 @@ namespace LitSpace {
 		dobuffer(L, buff, strlen(buff));
 	}
 	
-	//×¢²áÄ£¿é
+	//æ³¨å†Œæ¨¡å—
 	inline void openLuaLib(lua_State* L, const char* name, lua_CFunction fun) {
 		luaL_requiref(L, name, fun, 1);
 		lua_pop(L, 1);
@@ -217,7 +217,7 @@ namespace LitSpace {
 		luaL_openlibs(L);
 	}
 
-	//Ôª±í²éÕÒ·´Éä
+	//å…ƒè¡¨æŸ¥æ‰¾åå°„
 	static void invoke_parent(lua_State *L){
 		lua_pushstring(L, "__parent");
 		lua_rawget(L, -2);
@@ -235,7 +235,7 @@ namespace LitSpace {
 		}
 	}
 
-	//»ñÈ¡Ôª±í
+	//è·å–å…ƒè¡¨
 	inline int meta_get(lua_State *L){
 		
 		lua_getmetatable(L, 1);
@@ -263,7 +263,7 @@ namespace LitSpace {
 		return 1;
 	}
 
-	//ÉèÖÃÔª±í
+	//è®¾ç½®å…ƒè¡¨
 	inline int meta_set(lua_State *L){
 		lua_getmetatable(L, 1);
 		lua_pushvalue(L, 2);
@@ -288,13 +288,13 @@ namespace LitSpace {
 		return 0;
 	}
 
-	//Ôª±íÈëÕ»
+	//å…ƒè¡¨å…¥æ ˆ
 	inline void push_meta(lua_State *L, const char* name){
 		lua_getglobal(L, name);
 	}
 	
 
-	//ÇåÕ»,»áµ¼ÖÂtable¶ÔÏóÎŞĞ§
+	//æ¸…æ ˆ,ä¼šå¯¼è‡´tableå¯¹è±¡æ— æ•ˆ
 	inline void resetStack(lua_State* L) {
 		lua_settop(L, 0);
 	}
