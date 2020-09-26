@@ -55,7 +55,7 @@ int printTest( int a, int b, int c, bool d){
 
 
 int main(int argc, char* argv[]) {
-	//run_test();
-  testSpace::testTraits(&printTest, 1, 2, 3, false);
+  run_test();
+  //testSpace::testTraits(&printTest, 1, 2, 3, false);
   return 0;
 }
