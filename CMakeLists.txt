@@ -10,6 +10,7 @@ IF(NOT MSVC_VERSION)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fexceptions")
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-local-typedefs -Wreorder -ffunction-sections -fdata-sections")
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer")
+  SET(CMAKE_CXX_FLAGS_DEBUG "-DDEBUG -g -gdb")
   SET(LINK_LIBS ${LINK_LIBS} litlua dl)
 
 ELSE(NOT MSVC_VERSION)
