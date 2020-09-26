@@ -33,6 +33,18 @@ namespace LitSpace {
 	struct table;
 	struct nil;
 
+	static int on_error(lua_State* L);
+	inline void push_meta(lua_State* L, const char* name);
+
+	template<typename T>
+	inline T read(lua_State* L, int index);
+	template<typename T>
+	inline void push(lua_State* L, T ret);
+	template<typename T>
+	inline bool check(lua_State* L, int index);
+	template<typename T>
+	T upvalue_(lua_State* L);
+
 	template <std::size_t... M>
 	struct _indices {};
 
@@ -46,7 +58,7 @@ namespace LitSpace {
 
   template<typename F>
   struct guard{
-    typedef typename F Fun;
+    typedef  F Fun;
     explicit guard(const Fun& f) : _fun(f){}
     ~guard(){ _fun(); }
     Fun _fun;
@@ -60,18 +72,18 @@ namespace LitSpace {
     static constexpr size_t I = M - N;
     static const T& reader(lua_State* L, T& r, int& index){
       auto& ref = std::get<I>(r);
-      ref = read<std::remove_reference<decltype(ref)>::type>(L, index);
+      ref = read<typename std::remove_reference<decltype(ref)>::type>(L, index);
       tuple_reader< N - 1, M, T>::reader(L, r, ++index);
       return r;
     }
     static bool check_reader(lua_State* L, T& r, int& index, std::string& _error_msg){
       auto& ref = std::get<I>(r);
-      bool r1 = check<std::remove_reference<decltype(ref)>::type>(L, index);
+      bool r1 = check<typename std::remove_reference<decltype(ref)>::type>(L, index);
       if(r1){
-        ref = read<std::remove_reference<decltype(ref)>::type>(L, index);
+        ref = read<typename std::remove_reference<decltype(ref)>::type>(L, index);
 	  }
 	  else {
-		  _error_msg.append("\nerror read index:").append(std::to_string(I)).append(" with type:").append(typeid(std::remove_reference<decltype(ref)>::type).name());
+		  _error_msg.append("\nerror read index:").append(std::to_string(I)).append(" with type:").append(typeid(typename std::remove_reference<decltype(ref)>::type).name());
 	  }
       bool r2 = tuple_reader< N - 1, M, T>::check_reader(L, r, ++index, _error_msg);
       return r2 && r1;
@@ -84,15 +96,15 @@ namespace LitSpace {
     static constexpr size_t I = M - 1;
     static const T& reader(lua_State* L, T& r, int& index){
       auto& ref = std::get<I>(r);
-      ref = read<std::remove_reference<decltype(ref)>::type>(L, index);
+      ref = read<typename std::remove_reference<decltype(ref)>::type>(L, index);
       return r;
     }
 
     static bool check_reader(lua_State* L, T& r, int& index, std::string& _error_msg){
       auto& ref = std::get<I>(r);
-      bool r1 = check<std::remove_reference<decltype(ref)>::type>(L, index);
-      if (r1){ ref = read<std::remove_reference<decltype(ref)>::type>(L, index); }
-      else{ _error_msg.append("\nerror read index:").append(std::to_string(I)).append(" with type:").append(typeid(std::remove_reference<decltype(ref)>::type).name()); }
+      bool r1 = check<typename std::remove_reference<decltype(ref)>::type>(L, index);
+      if (r1){ ref = read<typename std::remove_reference<decltype(ref)>::type>(L, index); }
+      else{ _error_msg.append("\nerror read index:").append(std::to_string(I)).append(" with type:").append(typeid(typename std::remove_reference<decltype(ref)>::type).name()); }
       return r1;
     }
   };
@@ -215,86 +227,94 @@ namespace LitSpace {
     push_args(L, args...);
   }
 
+  template<typename Ret, typename ... ARGS>
+  struct res_functor{
+	  static constexpr bool ISVOID = std::is_void<Ret>::value;
+	  static int push_result(lua_State* L, const std::function<Ret(ARGS...)>& func) {
+		  if (nullptr == func) {
+			  push(L, "lua error with call invalid std::function (nullptr)");
+			  on_error(L);
+			  return 0;
+		  }
+		  int index = 1;
+		  push<Ret>(L, litFunciton(func, lua_args< ARGS ...>::reader(L, index)));
+		  return 1;
+	  }
+  };
+
+  template< typename ... ARGS>
+  struct void_functor {
+	  static constexpr bool ISVOID = true;
+	  static int push_result(lua_State* L, const std::function<void(ARGS...)>& func) {
+		  if (nullptr == func) {
+			  push(L, "lua error with call invalid std::function (nullptr)");
+			  on_error(L);
+			  return 0;
+		  }
+		  int index = 1;
+		  litFunciton(func, lua_args< ARGS ...>::reader(L, index));
+		  return 0;
+	  }
+  };
+
   //全局函数和std::function反射
-  template<typename ... ARGS>
+  template<typename Ret, typename ... ARGS>
   struct functor : public lua_args< ARGS ...>{
-    template<typename Ret>
+    //template<typename Ret>
     static int invoke_func(lua_State* L){
       const std::function<Ret(ARGS...)>& func = upvalue_<std::function<Ret(ARGS...)>>(L);
-      if (!check(L, func)) return 0;
-      int index = 1;
-      push<Ret>(L, litFunciton(func, reader(L, index)));
-      return 1;
-    }
-    template<>
-    static int invoke_func<void>(lua_State* L){
-      const std::function<void(ARGS...)>& func = upvalue_< std::function<void(ARGS...)>>(L);
-      if(!check(L, func)) return 0;
-      int index = 1;
-      litFunciton(func, reader(L, index));
-      return 0;
+      return std::conditional<std::is_void<Ret>::value, void_functor<ARGS ...>, res_functor<Ret, ARGS ...> >::type::push_result(L, func);
     }
 
-    template<typename Ret>
-    static int invoke(lua_State* L){
-      const std::function<Ret(ARGS...)>& func = upvalue_<Ret(*)(ARGS ...)>(L);
-      if (!check(L, func))  return 0;
-      int index = 1;
-      push<Ret>(L, litFunciton(func, reader(L, index)));
-      return 1;
-    }
-    template<>
-    static int invoke<void>(lua_State* L){
-      const std::function<void(ARGS...)>& func = upvalue_<void(*)(ARGS ...)>(L);
-      if (!check(L, func))  return 0;
-      int index = 1;
-      litFunciton(func, reader(L, index));
-      return 0;
-    }
 
-    template<typename Ret>
-    static bool check(lua_State* L, const std::function<Ret(ARGS...)>& func){
-      if (nullptr == func){
-        push(L, "lua error with call invalid std::function (nullptr)");
-        on_error(L);
-        return false;
-      }
-      return true;
-    }
+	//template<typename Ret>
+	static int invoke(lua_State* L) {
+		const std::function<Ret(ARGS...)>& func = upvalue_<Ret(*)(ARGS ...)>(L);
+		return std::conditional<std::is_void<Ret>::value, void_functor<ARGS ...>, res_functor<Ret, ARGS ...> >::type::push_result(L, func);
+	}
+  };
+
+
+  template<typename T,typename Ret, typename ... ARGS>
+  struct res_class_functor {
+	  static constexpr bool ISVOID = std::is_void<Ret>::value;
+	  static int push_result(lua_State* L,  Ret(T::* func)(ARGS ...)) {
+		  int index = 1;
+		  T* t = read<T*>(L, index++);
+		  if (nullptr == t || nullptr == func) {
+			  push(L, "lua error with call invalid object(nullptr) member function");
+			  on_error(L);
+			  return 0;
+		  }
+		  push<Ret>(L, classLitFunciton(func,t, lua_args< ARGS ...>::reader(L, index)));
+		  return 1;
+	  }
+  };
+
+  template<typename T, typename ... ARGS>
+  struct void_class_functor {
+	  static constexpr bool ISVOID = true;
+	  static int push_result(lua_State* L, void(T::* func)(ARGS ...)) {
+		  int index = 1;
+		  T* t = read<T*>(L, index++);
+		  if (nullptr == t || nullptr == func) {
+			  push(L, "lua error with call invalid object(nullptr) member function");
+			  on_error(L);
+			  return 0;
+		  }
+		  classLitFunciton(func,t, lua_args< ARGS ...>::reader(L, index));
+		  return 0;
+	  }
   };
 
   //类成员函数反射
-  template< typename T, typename ... ARGS>
+  template<typename Ret, typename T, typename ... ARGS>
   struct classfunctor : public lua_args< ARGS ...>{
-    template<typename Ret>
-    static int invoke(lua_State* L){
-      auto func = upvalue_<Ret(T::*)(ARGS ...)>(L);
-      int index = 1;
-      T* t = read<T*>(L, index++);
-      if(!check(L, t)) return 0;
-      push<Ret>(L, classLitFunciton(func, t, reader(L, index)));
-      return 1;
-    }
-    template<>
-    static int invoke<void>(lua_State* L){
-      auto func = upvalue_<void(T::*)(ARGS ...)>(L);
-      int index = 1;
-      T* t = read<T*>(L, index++);
-      if (!check(L, t)) return 0;
-      classLitFunciton(func, t, reader(L, index));
-      return 0;
-    }
-
-    static bool check(lua_State* L, T* t){
-      if (nullptr == t){
-        push(L, "lua error with call invalid object(nullptr) member function");
-        on_error(L);
-        return false;
-      }
-      return true;
-    }
+	  static int invoke(lua_State* L) {
+		  auto func = upvalue_<Ret(T::*)(ARGS ...)>(L);
+		  return std::conditional<std::is_void<Ret>::value, void_class_functor<T, ARGS ...>, res_class_functor<T, Ret, ARGS ...> >::type::push_result(L, func);
+	  }
   };
-
 
   //整数类型相关操作
   template<typename T>
@@ -373,7 +393,18 @@ namespace LitSpace {
     }
   };
 
+  //判断是否是对象类型
+  template<typename A>
+  struct is_obj {
+	  static constexpr bool value = !std::is_integral<A>::value && !std::is_floating_point<A>::value;// true;
+  };
 
+  template<> struct is_obj<char*> { static constexpr bool value = false; };
+  template<> struct is_obj<const char*> { static constexpr bool value = false; };
+  template<> struct is_obj<lua_value*> { static constexpr bool value = false; };
+  template<> struct is_obj<table> { static constexpr bool value = false; };
+  template<> struct is_obj<nil> { static constexpr bool value = false; };
+  template<> struct is_obj<std::string> { static constexpr bool value = false; };
 
   //成员变量
   struct var_base{
@@ -430,18 +461,7 @@ namespace LitSpace {
 		}
 	};
 
-	//判断是否是对象类型
-	template<typename A>
-	struct is_obj { 
-		static constexpr bool value = !std::is_integral<A>::value  && !std::is_floating_point<A>::value;// true;
-	};
 	
-	template<> struct is_obj<char*> { static constexpr bool value = false; };
-	template<> struct is_obj<const char*> { static constexpr bool value = false; };
-	template<> struct is_obj<lua_value*> { static constexpr bool value = false; };
-	template<> struct is_obj<table> { static constexpr bool value = false; };
-	template<> struct is_obj<nil> { static constexpr bool value = false; };
-	template<> struct is_obj<std::string> { static constexpr bool value = false; };
 
 	//void*指针转换对应类型反射
 	template<typename T>
@@ -637,24 +657,22 @@ namespace LitSpace {
 	template<typename R, typename ... ARGS >
 	void push_function(lua_State *L, R(*func)(ARGS ...)) {
 		(void)func;
-		lua_pushcclosure(L, functor<ARGS...>::invoke<R>, 1);
+		lua_pushcclosure(L, functor<R, ARGS...>::invoke, 1);
 	}
-
 
 	//std::function闭包入栈 func的作用域和有效期回影响调用
 	template<typename R, typename ... ARGS >
 	void push_function2(lua_State *L, const std::function<R( ARGS...)>& func) {
 		(void)func;
-		lua_pushcclosure(L, functor<ARGS...>::invoke_func<R>, 1);
+		lua_pushcclosure(L, functor<R, ARGS...>::invoke_func, 1);
 	}
-
-
 	//成员函数闭包入栈
 	template<typename R, typename T, typename ... ARGS >
 	void push_mfunctor(lua_State *L, R(T::*func)(ARGS ...)) {
 		(void)func;
-		lua_pushcclosure(L, classfunctor<T, ARGS...>::invoke<R>, 1);
+		lua_pushcclosure(L, classfunctor<R, T, ARGS...>::invoke, 1);
 	}
+
 
 	//构造函数入栈
 	template<typename T, typename ... ARGS>

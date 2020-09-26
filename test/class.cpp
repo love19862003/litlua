@@ -113,7 +113,7 @@ void run_test() {
 	  assert(5 == std::get<5>(p));
 	  assert(!std::get<6>(p).m_nil);
 
-	  LuaSpace::table t = std::get<LuaSpace::table>(p);
+	  LuaSpace::table t = std::get<6>(p);
 	  assert(!t.m_nil);
 	  t.call<void>("p", "cpp call table function good");
 	  LuaSpace::resetStack(L);

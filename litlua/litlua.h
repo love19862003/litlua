@@ -121,7 +121,7 @@ namespace LitSpace {
 	void class_parent(lua_State* L){
 		static_assert(std::has_virtual_destructor<T>::value );
 		static_assert(std::has_virtual_destructor<P>::value );
-		static_assert(std::is_convertible<std::add_pointer<T>::type, std::add_pointer<P>::type>::value);
+		static_assert(std::is_convertible<typename std::add_pointer<T>::type, typename std::add_pointer<P>::type>::value);
 		push_meta(L, class_name<T>::name());
 		if (lua_istable(L, -1)){
 			lua_pushstring(L, "__parent");

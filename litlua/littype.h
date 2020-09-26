@@ -22,6 +22,7 @@ Organization:
 #include <iostream>
 #include "lua.hpp"
 #include "littraits.h"
+#include "litapi.h"
 
 namespace LitSpace{
 
@@ -43,7 +44,6 @@ namespace LitSpace{
     type2lua<T>(L, ret); 
   }
 
- 
   template<typename T>
   inline T pop(lua_State *L){ T t = read<T>(L, -1); lua_pop(L, 1); return t; }
 
