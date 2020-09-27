@@ -75,7 +75,7 @@ void run_error_bind(){
   LuaSpace::add_fun(L, "test", &test);
 
   //this function will call failed
-  {
+  //{
     std::function<int(int, int)> fun = [](int a, int b)-> int{return a + b; };
     LuaSpace::add_fun2(L, "func", fun);
 
@@ -86,13 +86,15 @@ void run_error_bind(){
     std::function<int()> fun3 = std::bind(&CTest::add, t);
     LuaSpace::add_fun2(L, "func3", fun3);
 
-    delete t;
-    t = nullptr;
-  }
+    //delete t;
+   // t = nullptr;
+  //}
 
   
 
   LuaSpace::dofile(L, "static_function.lua");
   lua_close(L);
   L = nullptr;
+  delete t;
+  t = nullptr;
 }
