@@ -13,7 +13,7 @@ Author:   wufan, love19862003@163.com
 
 Organization:
 *********************************************************************/
-
+#pragma once
 #ifndef __litlua_h__
 #define __litlua_h__
 #include <new>
@@ -40,10 +40,11 @@ namespace LitSpace {
 		lua_setglobal(L, name);
 	}
 
+  //std::function bind
 	template<typename F>
-	void add_fun2(lua_State* L, const char* name,  const F& func) {
+	void add_functor(lua_State* L, const char* name,  const F& func) {
 		lua_pushlightuserdata(L, (void*)&func);
-		push_function2(L, func);
+		push_functor(L, func);
 		lua_setglobal(L, name);
 	}
 

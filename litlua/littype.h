@@ -13,6 +13,7 @@ Author:   wufan, love19862003@163.com
 
 Organization:
 *********************************************************************/
+#pragma once
 #ifndef __lit_type_h__
 #define __lit_type_h__
 
@@ -25,6 +26,33 @@ Organization:
 #include "litapi.h"
 
 namespace LitSpace{
+
+#if LUA_VERSION_NUM == 501
+	static void lua_len(lua_State* L, int i) {
+		switch (lua_type(L, i)) {
+		case LUA_TSTRING:
+			lua_pushnumber(L, (lua_Number)lua_objlen(L, i));
+			break;
+		case LUA_TTABLE:
+			if (!luaL_callmeta(L, i, "__len"))
+				lua_pushnumber(L, (lua_Number)lua_objlen(L, i));
+			break;
+		case LUA_TUSERDATA:
+			if (luaL_callmeta(L, i, "__len"))
+				break;
+			/* FALLTHROUGH */
+		default:
+			luaL_error(L, "attempt to get length of a %s value",
+				lua_typename(L, lua_type(L, i)));
+		}
+	}
+
+//     static bool lua_isinteger(lua_State* L, int index) {
+// 		int32_t x = (int32_t)lua_tointeger(L, index);
+// 		lua_Number n = lua_tonumber(L, index);
+// 		return ((lua_Number)x == n);
+//     }
+#endif
 
   //检查对象是否能转换成对应返回值
   template<typename T>
@@ -46,6 +74,8 @@ namespace LitSpace{
 
   template<typename T>
   inline T pop(lua_State *L){ T t = read<T>(L, -1); lua_pop(L, 1); return t; }
+
+
 
   template<>
   inline void  pop(lua_State *L){ lua_pop(L, 1); }
@@ -130,6 +160,7 @@ namespace LitSpace{
     }
 
 
+
     unsigned int length(){
       if (validate()){
         lua_len(m_L, m_index);
@@ -153,16 +184,17 @@ namespace LitSpace{
 
     
 
-    template<typename T>
-    T get(const std::string& name){
-      if (validate()){
-        lua_pushstring(m_L, name.data());
-        lua_gettable(m_L, m_index);
-      } else{
-        lua_pushnil(m_L);
-      }
-      return pop<T>(m_L);
-    }
+	template<typename T>
+	T get(const std::string& name) {
+		if (validate()) {
+			lua_pushstring(m_L, name.data());
+			lua_gettable(m_L, m_index);
+		}
+		else {
+			lua_pushnil(m_L);
+		}
+		return pop<T>(m_L);
+	}
 
 	//调用完后,会把栈状态保存成调用前的对象
     template<typename lua_returns, typename ... ARGS>
@@ -319,17 +351,17 @@ namespace LitSpace{
 
 	//获取成员对象 v = table[k]
     template<typename T>
-    T get(const char* name){
+    T get(const char* name, T t = T()){
       checkNil();
-      if (m_nil){ return T(); }
+      if (m_nil){ return t; }
       return m_obj->get<T>(name);
     }
 
 	//获取成员对象 v = table[index]
     template<typename T>
-    T get(int index){
+    T get(int index, T t = T()){
 		  checkNil();
-		  if (m_nil){  return T(); }
+		  if (m_nil){  return t; }
 		  return m_obj->get<T>(index);
     }
 
@@ -365,8 +397,9 @@ namespace LitSpace{
     
 	void reset() { m_nil = true; m_obj.reset(); }
 
-    std::shared_ptr<table_impl>  m_obj;	 //引用对象
     bool  m_nil = false;				 //是否是nil
+    std::shared_ptr<table_impl>  m_obj;	 //引用对象
+    
     static table nilTable(){ static table t;  return t; }
   };
 
@@ -404,27 +437,32 @@ namespace LitSpace{
   }
 
 
-  template<>
-  table table_impl::get<table>(int index){
-    if (validate()){
-      lua_pushinteger(m_L, index);
-      lua_gettable(m_L, m_index);
-    } else{
-      lua_pushnil(m_L);
-    }
-    return read<table>(m_L, -1);
-  }
+//   template<>
+//   table table_impl::get<table>(int index) {
+// 	  if (validate()) {
+// 		  lua_pushinteger(m_L, index);
+// 		  lua_gettable(m_L, m_index);
+// 	  }
+// 	  else {
+// 		  lua_pushnil(m_L);
+// 	  }
+// 	  return read<table>(m_L, -1);
+//   }
+// 
+//   template<>
+//   table table_impl::get<table>(const std::string& name) {
+// 	  if (validate()) {
+// 		  lua_pushstring(m_L, name.data());
+// 		  lua_gettable(m_L, m_index);
+// 	  }
+// 	  else {
+// 		  lua_pushnil(m_L);
+// 	  }
+// 	  return read<table>(m_L, -1);
+//   }
 
   template<>
-  table table_impl::get<table>(const std::string& name){
-    if (validate()){
-      lua_pushstring(m_L, name.data());
-      lua_gettable(m_L, m_index);
-    } else{
-      lua_pushnil(m_L);
-    }
-    return read<table>(m_L, -1);
-  }
+  inline table pop(lua_State* L) { return read<table>(L, -1); }
 
 }
 

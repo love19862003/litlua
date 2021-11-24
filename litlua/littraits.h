@@ -13,12 +13,14 @@ Author:   wufan, love19862003@163.com
 
 Organization:
 *********************************************************************/
+#pragma once
 #ifndef __lit_traits_h__
 #define __lit_traits_h__
 
 #include <new>
 #include <stdint.h>
 #include <string.h>
+#include <string>
 #include <lua.hpp>
 #include <stdio.h>
 #include <typeinfo>
@@ -27,11 +29,20 @@ Organization:
 #include <tuple>
 #include <functional>
 
+#if LUA_VERSION_NUM == 501
+static bool lua_isinteger(lua_State* L, int index) {
+    int32_t x = (int32_t)lua_tointeger(L, index);
+    lua_Number n = lua_tonumber(L, index);
+    return ((lua_Number)x == n);
+}
+#endif
 
 namespace LitSpace {
 	struct lua_value;
 	struct table;
 	struct nil;
+
+
 
 	static int on_error(lua_State* L);
 	inline void push_meta(lua_State* L, const char* name);
@@ -76,16 +87,17 @@ namespace LitSpace {
       tuple_reader< N - 1, M, T>::reader(L, r, ++index);
       return r;
     }
-    static bool check_reader(lua_State* L, T& r, int& index, std::string& _error_msg){
+    static bool result_check_reader(lua_State* L, T& r, int& index, std::string& _error_msg){
       auto& ref = std::get<I>(r);
       bool r1 = check<typename std::remove_reference<decltype(ref)>::type>(L, index);
       if(r1){
-        ref = read<typename std::remove_reference<decltype(ref)>::type>(L, index);
+        //ref = read<typename std::remove_reference<decltype(ref)>::type>(L, index);
+		ref = read<decltype(ref)>(L, index);
 	  }
 	  else {
 		  _error_msg.append("\nerror read index:").append(std::to_string(I)).append(" with type:").append(typeid(typename std::remove_reference<decltype(ref)>::type).name());
 	  }
-      bool r2 = tuple_reader< N - 1, M, T>::check_reader(L, r, ++index, _error_msg);
+      bool r2 = tuple_reader< N - 1, M, T>::result_check_reader(L, r, ++index, _error_msg);
       return r2 && r1;
     }
 
@@ -100,29 +112,56 @@ namespace LitSpace {
       return r;
     }
 
-    static bool check_reader(lua_State* L, T& r, int& index, std::string& _error_msg){
+    static bool result_check_reader(lua_State* L, T& r, int& index, std::string& _error_msg){
       auto& ref = std::get<I>(r);
       bool r1 = check<typename std::remove_reference<decltype(ref)>::type>(L, index);
-      if (r1){ ref = read<typename std::remove_reference<decltype(ref)>::type>(L, index); }
+      if (r1){
+		  //ref = read<typename std::remove_reference<decltype(ref)>::type>(L, index); 
+		  ref = read<decltype(ref)>(L, index);
+	  }
       else{ _error_msg.append("\nerror read index:").append(std::to_string(I)).append(" with type:").append(typeid(typename std::remove_reference<decltype(ref)>::type).name()); }
       return r1;
     }
   };
 
-  //lua传入参数列表对象
-  template<typename ... ARGS>
-  struct lua_args : public std::tuple<  ARGS ...>{
-    static constexpr size_t NSIZE = sizeof...(ARGS);
-    typedef lua_args args;
-    static args reader(lua_State* L, int& index){ args r;return tuple_reader<NSIZE, NSIZE, lua_args>::reader(L, r, index);}
-  };
+//   //lua传入参数列表对象
+//   template<typename ... ARGS>
+//   struct lua_args : public std::tuple<  ARGS ...>{
+//     static constexpr size_t NSIZE = sizeof...(ARGS);
+//     typedef lua_args args;
+//     static args reader(lua_State* L, int& index){ args r;return tuple_reader<NSIZE, NSIZE, lua_args>::reader(L, r, index);}
+//   };
+// 
+//   template<>
+//   struct lua_args<> : public std::tuple<>{
+//     static constexpr size_t NSIZE = 0;
+//     typedef lua_args args;
+//     static args reader(lua_State* L, int& index){ return args();}
+//   };
+
+
+  template<typename... _Types>
+  struct lua_args;
 
   template<>
-  struct lua_args<> : public std::tuple<>{
-    static constexpr size_t NSIZE = 0;
-    typedef lua_args args;
-    static args reader(lua_State* L, int& index){ return args();}
+  struct lua_args<>{
+      static constexpr size_t NSIZE = 0;
+      typedef std::tuple<> Type;
+      static Type reader(lua_State* L, int& index) {
+          return std::tuple<>();
+      }
   };
+
+  template< typename T, typename ... ARGS>
+  struct lua_args<T, ARGS...>: private lua_args< ARGS... > {
+      static constexpr size_t NSIZE = sizeof...(ARGS) + 1;
+      typedef std::tuple< T, ARGS ... > Type;
+      static Type reader(lua_State* L, int& index) {
+		  T t = read<T>(L, index);
+		  return tuple_cat(std::tuple<T>(t), lua_args<ARGS ...>::reader(L, ++index));
+	  }
+  };
+
 
 
 
@@ -136,44 +175,43 @@ namespace LitSpace {
     static constexpr bool HAS_TABLE = std::is_same<T, table>::value;
   };
 
-  //lua执行结果对象
-  template<typename T, typename ... ARGS>
-  struct lua_returns : public std::tuple<T,  ARGS ...>{
-    static constexpr size_t NSIZE =  1 + sizeof...(ARGS);
-    static constexpr bool IS_RETURN = true;
-    static constexpr bool HAS_TABLE = HasTable<T, ARGS ...>::HAS_TABLE;
-    typedef lua_returns args;
-    static args reader(lua_State* L, int& index){
-      args r; 
-      r._err = !tuple_reader<NSIZE, NSIZE, lua_returns>::check_reader(L, r, index, r._error_msg);
-      return r;
-    }
-    bool _err = false;
-    std::string _error_msg = "";
-
-    T& get(){
-      return std::get<0>(*this);
-    }
-
-  };
-
-  template<>
-  struct lua_returns<void> :public std::tuple<> {
-	  static constexpr size_t NSIZE = 0;
-	  static constexpr bool IS_RETURN = true;
-    static constexpr bool HAS_TABLE = false;
-	  typedef lua_returns<void> args;
-	  static args reader(lua_State* L, int& index) {
-		  return lua_returns<void>();
-	  }
-	  bool _err = false;
-	  std::string _error_msg = "";
-
-	  void get() {
-
-	  }
-  };
-
+   //lua执行结果对象
+   template<typename T, typename ... ARGS>
+   struct lua_returns : public std::tuple<T, ARGS ...> {
+       static constexpr size_t NSIZE = 1 + sizeof...(ARGS);
+       static constexpr bool IS_RETURN = true;
+       static constexpr bool HAS_TABLE = HasTable<T, ARGS ...>::HAS_TABLE;
+       typedef lua_returns args;
+       static args reader(lua_State* L, int& index) {
+           args r;
+           r._err = !tuple_reader<NSIZE, NSIZE, lua_returns>::result_check_reader(L, r, index, r._error_msg);
+           return r;
+       }
+       bool _err = false;
+       std::string _error_msg = "";
+ 
+       T& get() {
+           return std::get<0>(*this);
+       }
+ 
+   };
+ 
+   template<>
+   struct lua_returns<void> :public std::tuple<> {
+       static constexpr size_t NSIZE = 0;
+       static constexpr bool IS_RETURN = true;
+       static constexpr bool HAS_TABLE = false;
+       typedef lua_returns<void> args;
+       static args reader(lua_State* L, int& index) {
+           return lua_returns<void>();
+       }
+       bool _err = false;
+       std::string _error_msg = "";
+ 
+       void get() {
+ 
+       }
+   };
 
    //全局函数的多参数展开
 	template <typename Ret, typename... ARGS, std::size_t... N>
@@ -524,7 +562,7 @@ namespace LitSpace {
 		static T invoke(lua_State *L, int index){
 			bool err = !lua_isuserdata(L, index);
 			if (err){
-				auto t =  T();
+				auto t = base_type<T>();
 				std::string note;
 				note.append( "\ntype:[").append(typeid(t).name()).append("]call class type error \n1.first argument. (forgot ':' expression ?)");
 				push(L, note);
@@ -662,7 +700,7 @@ namespace LitSpace {
 
 	//std::function闭包入栈 func的作用域和有效期回影响调用
 	template<typename R, typename ... ARGS >
-	void push_function2(lua_State *L, const std::function<R( ARGS...)>& func) {
+	void push_functor(lua_State *L, const std::function<R( ARGS...)>& func) {
 		(void)func;
 		lua_pushcclosure(L, functor<R, ARGS...>::invoke_func, 1);
 	}

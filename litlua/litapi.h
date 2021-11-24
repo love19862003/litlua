@@ -13,6 +13,7 @@ Author:   wufan, love19862003@163.com
 
 Organization:
 *********************************************************************/
+#pragma once
 #ifndef __lit_api_h__
 #define __lit_api_h__
 #include <new>
@@ -24,6 +25,8 @@ Organization:
 #include "littraits.h"
 #include "litlua.h"
 namespace LitSpace {
+
+
 
 	//lua 版本信息
 	inline std::string version() {
@@ -204,12 +207,13 @@ namespace LitSpace {
 	inline void dostring(lua_State *L, const char* buff) {
 		dobuffer(L, buff, strlen(buff));
 	}
-	
+#if LUA_VERSION_NUM > 501
 	//注册模块
 	inline void openLuaLib(lua_State* L, const char* name, lua_CFunction fun) {
 		luaL_requiref(L, name, fun, 1);
 		lua_pop(L, 1);
 	}
+#endif
 
 	//openlibs
 	inline void openLuaLibs(lua_State* L) {
